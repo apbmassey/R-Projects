@@ -49,3 +49,47 @@ install.packages("ellipse")
 
 featurePlot(x=x, y=y, plot="ellipse")
 featurePlot(x=x, y=y, plot="box")
+
+#let us do some density plots for each attribute by class value
+scales <- list(x=list(relation="free"), y=list(relation="free"))
+featurePlot(x=x, y=y, plot="density", scales=scales)
+
+#we should begin to evaluate some algorithms
+#to estimate accuracy we can do a 10-fold cross validation
+control <- trainControl(method="cv", number=10)
+metric <- "Accuracy"
+
+#let us try linear algorithms
+#LDA - linear discriminant analysis
+set.seed(7)
+fit.lda <- train(Species~., data=dataset, method="lda", metric=metric, trControl=control)
+#try two nonlinear algorithms
+#CART - classification and regression trees
+set.seed(7)
+fit.cart <- train(Species~., data=dataset, method="rpart", metric=metric, trControl=control)
+#kNN - k-Nearest Neighbour
+set.seed(7)
+fit.knn <- train(Species~., data=dataset, method="knn", metric=metric, trControl=control)
+#try two advanced algorithms
+#SVM - support vector machines
+set.seed(7)
+fit.svm <- train(Species~., data=dataset, method="svmRadial", metric=metric, trControl=control)
+#RF - Random forest
+set.seed(7)
+fit.rf <- train(Species~., data=dataset, method="rf", metric=metric, trControl=control)
+
+#Now we should try to select the best model.
+#We can look at the accuracy of each model by creating a list and use the summary function
+results <- resamples(list(lda=fit.lda, cart=fit.cart, knn=fit.knn, svm=fit.svm, rf=fit.rf))
+
+#Let us create a plot of the model evaluation results to compare the spread and accuracy
+#compare accuracy of models
+dotplot(results)
+
+#the LDA is the most accurate, we should summarize it
+print(fit.lda)
+
+#compare to validation set to check if accuracy is true and not overfit
+#run the model on the validation set and summarize
+predictions <- predict(fit.lda, validation)
+confusionMatrix(predictions, validation$Species)
